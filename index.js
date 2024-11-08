@@ -26,6 +26,15 @@ async function run() {
     const cartCollection = client.db("project_1").collection("carts");
     const orderCollection = client.db("project_1").collection("orders");
 
+    // Logger middleware
+    app.use((req, res, next) => {
+      const logDetails = `Method: ${req.method}, URL: ${
+        req.originalUrl
+      }, Time: ${new Date().toISOString()}`;
+      console.log(logDetails); // Log to the console
+      next(); // Pass control to the next middleware
+    });
+
     // get lessons
     app.get("/lessons", async (req, res) => {
       const result = await courseCollection.find().toArray();
@@ -93,6 +102,18 @@ async function run() {
     });
 
     // order
+    app.post("/order", async (req, res) => {
+      const orderData = req.body;
+      const cartData = await cartCollection.find().toArray();
+      const result = await orderCollection.insertOne({
+        ...orderData,
+        cartData,
+      });
+      if (result.acknowledged) {
+        await cartCollection.deleteMany({});
+      }
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
